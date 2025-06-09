@@ -1,0 +1,114 @@
+Name:           openssh
+Version:        9.8p1
+Release:        1%{?dist}
+Summary:        OpenSSH core libraries
+
+%global __brp_compress %{nil}
+
+License:        BSD
+URL:            https://www.openssh.com
+Source0:        openssh-9.8p1.tar.gz
+
+BuildRequires:  gcc, make, pam-devel
+Requires:       systemd
+
+%define _prefix /usr
+%define debug_package %{nil}
+
+%description
+OpenSSH core package.
+
+%package clients
+Summary: OpenSSH client applications
+Requires: %{name} = %{version}-%{release}
+%description clients
+OpenSSH clients such as ssh, scp, sftp, ssh-keygen, etc.
+
+%package server
+Summary: OpenSSH server daemon and service
+Requires: %{name} = %{version}-%{release}
+%description server
+OpenSSH server daemon with PAM and systemd integration.
+
+%prep
+%autosetup -n openssh-9.8p1
+
+%build
+./configure --prefix=%{_prefix} \
+            --sysconfdir=/etc/ssh \
+            --with-pam \
+            --with-ssl-dir=/usr/local/src/openssl \
+            --with-zlib=/usr/local/src/zlib
+
+make -j$(nproc)
+
+%install
+rm -rf %{buildroot}
+make install DESTDIR=%{buildroot}
+
+# PAM config
+install -D -m 644 contrib/redhat/sshd.pam %{buildroot}/etc/pam.d/sshd
+
+# systemd unit
+mkdir -p %{buildroot}/etc/systemd/system
+cat > %{buildroot}/etc/systemd/system/sshd.service <<EOF
+[Unit]
+Description=OpenSSH server daemon
+After=network.target sshd-keygen.service
+Wants=sshd-keygen.service
+
+[Service]
+ExecStart=/usr/sbin/sshd -D
+ExecReload=/bin/kill -HUP \$MAINPID
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+%files
+%doc README LICENCE ChangeLog
+
+%files clients
+/usr/bin/ssh
+/usr/bin/scp
+/usr/bin/sftp
+/usr/bin/ssh-add
+/usr/bin/ssh-agent
+/usr/bin/ssh-keygen
+/usr/bin/ssh-keyscan
+/usr/share/man/man1/scp.1*
+/usr/share/man/man1/sftp.1*
+/usr/share/man/man1/ssh.1*
+/usr/share/man/man1/ssh-add.1*
+/usr/share/man/man1/ssh-agent.1*
+/usr/share/man/man1/ssh-keygen.1*
+/usr/share/man/man1/ssh-keyscan.1*
+/usr/share/man/man5/ssh_config.5*
+
+%files server
+/usr/sbin/sshd
+/usr/libexec/sftp-server
+/usr/libexec/ssh-keysign
+/usr/libexec/ssh-pkcs11-helper
+/usr/libexec/ssh-sk-helper
+/usr/libexec/sshd-session
+/usr/share/man/man5/sshd_config.5*
+/usr/share/man/man5/moduli.5*
+/usr/share/man/man8/sshd.8*
+/usr/share/man/man8/sftp-server.8*
+/usr/share/man/man8/ssh-keysign.8*
+/usr/share/man/man8/ssh-pkcs11-helper.8*
+/usr/share/man/man8/ssh-sk-helper.8*
+
+%config(noreplace) /etc/ssh/sshd_config
+%config(noreplace) /etc/ssh/ssh_config
+%config(noreplace) /etc/ssh/moduli
+%config(noreplace) /etc/pam.d/sshd
+/etc/systemd/system/sshd.service
+
+%changelog
+* Mon Jun 09 2025 DevOpsGPT <devops@example.com> - 9.8p1-1
+- Split openssh into server and client subpackages.
+
