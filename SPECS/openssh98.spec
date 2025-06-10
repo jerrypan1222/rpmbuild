@@ -68,8 +68,10 @@ chmod 600 /etc/ssh/ssh_host_*_key 2>/dev/null || :
 /usr/bin/*
 /usr/sbin/*
 /usr/libexec/openssh/*
+%dir /etc/ssh
 %config(noreplace) /etc/ssh/sshd_config
-/etc/ssh
+%config(noreplace) /etc/ssh/ssh_config
+%config(noreplace) /etc/ssh/moduli
 /etc/pam.d/sshd
 /usr/lib/systemd/system/sshd.service
 /var/lib/sshd
