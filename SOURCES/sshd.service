@@ -4,7 +4,7 @@ After=network.target sshd-keygen.target
 Wants=sshd-keygen.target
 
 [Service]
-ExecStart=/usr/sbin/sshd -D
+ExecStart=/usr/local/sbin/sshd -D
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=on-failure
