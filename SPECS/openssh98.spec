@@ -55,6 +55,9 @@ find %{buildroot} -type f -exec chrpath --delete {} + 2>/dev/null || :
 
 %post
 %systemd_post sshd.service
+if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
+    /usr/bin/ssh-keygen -A
+fi
 chmod 600 /etc/ssh/ssh_host_*_key 2>/dev/null || :
 
 %preun
